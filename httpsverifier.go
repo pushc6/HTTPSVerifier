@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pushc6/httpsverifier/page"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +17,7 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/edit/"):]
 	p, err := loadPage(title)
 	if err != nil {
-		p = &Page{Title: title}
+		p = &page.Page{Title: title}
 	}
 	t, _ := template.ParseFiles("request.html")
 	t.Execute(w, p)
@@ -27,11 +29,11 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func loadPage(title string) (*Page, error) {
+func loadPage(title string) (*page.Page, error) {
 	filename := title + ".txt"
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	return &Page{Title: title, Body: body}, nil
+	return &page.Page{Title: title, Body: body}, nil
 }
