@@ -1,0 +1,6 @@
+<h1>HTTPS Verifier Utility v.1</h1>
+
+<form action="/verify" method="POST">
+    <textarea name="result" rows="20" cols="80">{{printf "%s" .Body}}</textarea>
+    <input type="submit" value="Verify"/>
+</form>
