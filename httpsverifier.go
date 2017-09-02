@@ -16,7 +16,7 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Checking your certificate fingerprints %s \n\n", r.URL.Path[1:])
+	//fmt.Fprintf(w, "Checking your certificate fingerprints %s \n\n", r.URL.Path[1:])
 	domainRequested := "facebook.com"
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", "https://facebook.com", nil)
@@ -24,7 +24,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	found := false
 
 	//TODO strip off stuff like http and www and do a wildcard search for TLD
-
+	if r.Body == nil {
+		fmt.Println("NOTHING IN THE BODY")
+	}
+	decoder := json.NewDecoder(r.Body)
+	domainsRequested := &servicetypes.FingerprintRequest{}
+	err := decoder.Decode(domainsRequested)
+	if err != nil {
+		fmt.Fprintf(w, "There was a problem processing your request")
+	}
 	for _, val := range resp.TLS.PeerCertificates {
 		for _, dnsName := range val.DNSNames {
 
