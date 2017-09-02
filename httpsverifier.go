@@ -38,7 +38,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-		//fmt.Fprintf(w, "Certificate name %s  is: %x \n\n\n", val.DNSNames, sha1.Sum(val.Raw))
 	}
 }
 
