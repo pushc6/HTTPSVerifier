@@ -30,8 +30,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				sha := sha1.Sum(val.Raw)
 				encoded := fmt.Sprintf("%x", sha)
 				fmt.Println(encoded)
-				//fmt.Fprintf(w, "value %s", encoded)
-				//fmt.Fprintf(w, "%x", sha)
 				fmt.Fprintf(w, "hex value for domain %s, is %s", domainRequested, encoded)
 				found = true
 				break
