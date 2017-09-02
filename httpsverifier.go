@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"crypto/sha1"
-	"encoding/base64"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -20,16 +19,28 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", "https://facebook.com", nil)
 	resp, _ := client.Do(req)
+	found := false
 
 	for _, val := range resp.TLS.PeerCertificates {
 		for _, dnsName := range val.DNSNames {
-			if strings.ToLower(strings.TrimSpace(dnsName)) == strings.ToLower(domainRequested) {
-				//if base64.StdEncoding.EncodeToString(sha1.Sum(val.Raw)) == "whatweexpect" {
 
-				}
+			if strings.ToLower(strings.TrimSpace(dnsName)) == strings.ToLower(domainRequested) {
+				fmt.Println("dns name: ", dnsName)
+				//return the associated base64 encoded sha1 value
+				sha := sha1.Sum(val.Raw)
+				encoded := fmt.Sprintf("%x", sha)
+				fmt.Println(encoded)
+				//fmt.Fprintf(w, "value %s", encoded)
+				//fmt.Fprintf(w, "%x", sha)
+				fmt.Fprintf(w, "hex value for domain %s, is %s", domainRequested, encoded)
+				found = true
+				break
+			}
+			if found {
+				break
 			}
 		}
-		fmt.Fprintf(w, "Certificate name %s  value is: %x \n\n\n", val.DNSNames, sha1.Sum(val.Raw))
+		//fmt.Fprintf(w, "Certificate name %s  is: %x \n\n\n", val.DNSNames, sha1.Sum(val.Raw))
 	}
 }
 
