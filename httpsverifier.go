@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/pushc6/httpsverifier/page"
+	"github.com/pushc6/httpsverifier/servicetypes"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -21,16 +23,23 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	resp, _ := client.Do(req)
 	found := false
 
+	//TODO strip off stuff like http and www and do a wildcard search for TLD
+
 	for _, val := range resp.TLS.PeerCertificates {
 		for _, dnsName := range val.DNSNames {
 
 			if strings.ToLower(strings.TrimSpace(dnsName)) == strings.ToLower(domainRequested) {
 				fmt.Println("dns name: ", dnsName)
-				//return the associated base64 encoded sha1 value
+				//return the associated hex encoded sha1 value
 				sha := sha1.Sum(val.Raw)
 				encoded := fmt.Sprintf("%x", sha)
 				fmt.Println(encoded)
-				fmt.Fprintf(w, "hex value for domain %s, is %s", domainRequested, encoded)
+				response := &servicetypes.FingerprintResponse{
+					Domain:      domainRequested,
+					Fingerprint: encoded,
+				}
+				jsonEncoder := json.NewEncoder(w)
+				jsonEncoder.Encode(response)
 				found = true
 				break
 			}
