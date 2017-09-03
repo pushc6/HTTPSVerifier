@@ -36,8 +36,27 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		domain = addHTTPS(domain)
 		client := &http.Client{}
 		fmt.Println("Request", domain)
-		req, _ := http.NewRequest("GET", domain, nil)
-		resp, _ := client.Do(req)
+		req, err := http.NewRequest("GET", domain, nil)
+		if err != nil {
+			response := &servicetypes.DomainResult{
+				Domain:      domain,
+				Fingerprint: "",
+				Found:       false,
+			}
+			results.Results = append(results.Results, *response)
+			continue
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			response := &servicetypes.DomainResult{
+				Domain:      domain,
+				Fingerprint: "",
+				Found:       false,
+			}
+			results.Results = append(results.Results, *response)
+			continue
+		}
 
 		domain = removeHTTPS(domain)
 
@@ -67,8 +86,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+		if found == false {
+			response := &servicetypes.DomainResult{
+				Domain:      domain,
+				Fingerprint: "",
+				Found:       false,
+			}
+			results.Results = append(results.Results, *response)
+		}
 		found = false
-
 	}
 	jsonEncoder := json.NewEncoder(w)
 	jsonEncoder.Encode(results)
