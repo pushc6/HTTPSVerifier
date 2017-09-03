@@ -30,6 +30,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "There was a problem processing your request")
 	}
+
+	results := &servicetypes.FingerprintResponse{}
 	for _, domain := range domainsRequested.Domains {
 		domain = addHTTPS(domain)
 		client := &http.Client{}
@@ -50,22 +52,26 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					sha := sha1.Sum(val.Raw)
 					encoded := fmt.Sprintf("%x", sha)
 					fmt.Println(encoded)
-					response := &servicetypes.FingerprintResponse{
+					response := &servicetypes.DomainResult{
 						Domain:      domain,
 						Fingerprint: encoded,
 						Found:       true,
 					}
-					jsonEncoder := json.NewEncoder(w)
-					jsonEncoder.Encode(response)
+
+					results.Results = append(results.Results, *response)
 					found = true
 					break
 				}
-				if found {
-					break
-				}
+			}
+			if found {
+				break
 			}
 		}
+		found = false
+
 	}
+	jsonEncoder := json.NewEncoder(w)
+	jsonEncoder.Encode(results)
 }
 
 func verifyHandler(w http.ResponseWriter, r *http.Request) {

@@ -30,7 +30,11 @@ func TestHandler(t *testing.T) {
 	fingerResponse := &servicetypes.FingerprintResponse{}
 	decoder.Decode(fingerResponse)
 
-	if fingerResponse.Domain == "" || fingerResponse.Fingerprint == "" {
+	for _, result := range fingerResponse.Results {
+		fmt.Println("Result for ", result.Domain, " is ", result.Fingerprint)
+	}
+
+	if len(fingerResponse.Results) == 0 || len(fingerResponse.Results) == 0 {
 		t.Error("Either domain or fingerprint failed")
 	}
 
