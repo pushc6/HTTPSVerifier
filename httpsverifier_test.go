@@ -13,7 +13,7 @@ import (
 
 func TestHandler(t *testing.T) {
 	theReq := &servicetypes.FingerprintRequest{
-		DomainRequested: []string{"facebook.com"},
+		Domains: []string{"https://facebook.com", "linkedin.com", "google.com", "reddit.com"},
 	}
 	jReq, _ := json.Marshal(&theReq)
 	fmt.Println(jReq)

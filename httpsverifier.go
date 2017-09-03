@@ -17,42 +17,52 @@ import (
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, "Checking your certificate fingerprints %s \n\n", r.URL.Path[1:])
-	domainRequested := "facebook.com"
-	client := &http.Client{}
-	req, _ := http.NewRequest("GET", "https://facebook.com", nil)
-	resp, _ := client.Do(req)
 	found := false
 
 	//TODO strip off stuff like http and www and do a wildcard search for TLD
 	if r.Body == nil {
 		fmt.Println("NOTHING IN THE BODY")
 	}
+
 	decoder := json.NewDecoder(r.Body)
 	domainsRequested := &servicetypes.FingerprintRequest{}
 	err := decoder.Decode(domainsRequested)
 	if err != nil {
 		fmt.Fprintf(w, "There was a problem processing your request")
 	}
-	for _, val := range resp.TLS.PeerCertificates {
-		for _, dnsName := range val.DNSNames {
+	for _, domain := range domainsRequested.Domains {
+		domain = addHTTPS(domain)
+		client := &http.Client{}
+		fmt.Println("Request", domain)
+		req, _ := http.NewRequest("GET", domain, nil)
+		resp, _ := client.Do(req)
 
-			if strings.ToLower(strings.TrimSpace(dnsName)) == strings.ToLower(domainRequested) {
-				fmt.Println("dns name: ", dnsName)
-				//return the associated hex encoded sha1 value
-				sha := sha1.Sum(val.Raw)
-				encoded := fmt.Sprintf("%x", sha)
-				fmt.Println(encoded)
-				response := &servicetypes.FingerprintResponse{
-					Domain:      domainRequested,
-					Fingerprint: encoded,
+		domain = removeHTTPS(domain)
+
+		//TODO trim off the http/https/www and make it NAME.TLD
+
+		for _, val := range resp.TLS.PeerCertificates {
+			for _, dnsName := range val.DNSNames {
+				fmt.Println("matching ", domain)
+				if strings.Contains(strings.ToLower(strings.TrimSpace(dnsName)), strings.ToLower(domain)) {
+					fmt.Println("dns name: ", dnsName)
+					//return the associated hex encoded sha1 value
+					sha := sha1.Sum(val.Raw)
+					encoded := fmt.Sprintf("%x", sha)
+					fmt.Println(encoded)
+					response := &servicetypes.FingerprintResponse{
+						Domain:      domain,
+						Fingerprint: encoded,
+						Found:       true,
+					}
+					jsonEncoder := json.NewEncoder(w)
+					jsonEncoder.Encode(response)
+					found = true
+					break
 				}
-				jsonEncoder := json.NewEncoder(w)
-				jsonEncoder.Encode(response)
-				found = true
-				break
-			}
-			if found {
-				break
+				if found {
+					break
+				}
 			}
 		}
 	}
@@ -89,4 +99,23 @@ func loadPage(title string) (*page.Page, error) {
 		return nil, err
 	}
 	return &page.Page{Title: title, Body: body}, nil
+}
+
+func addHTTPS(url string) string {
+	if !strings.Contains(strings.ToLower(url), "https://") && !strings.Contains(strings.ToLower(url), "https:\\") {
+		fmt.Println("no https, adding it now")
+		url = "https://" + url
+	}
+	return url
+}
+
+func removeHTTPS(url string) string {
+	if strings.Contains(strings.ToLower(url), "https://") || strings.Contains(strings.ToLower(url), "https:\\") {
+		url = url[8:len(url)]
+		fmt.Println("new url ", url)
+	}
+	if strings.Contains(strings.ToLower(url), "www.") {
+		url = url[4:len(url)]
+	}
+	return url
 }

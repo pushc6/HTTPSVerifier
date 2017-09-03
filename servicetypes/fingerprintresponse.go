@@ -4,4 +4,5 @@ package servicetypes
 type FingerprintResponse struct {
 	Domain      string
 	Fingerprint string
+	Found       bool
 }
