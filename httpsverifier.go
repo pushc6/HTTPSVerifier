@@ -121,6 +121,7 @@ func main() {
 	} else {
 		fmt.Println("Point your browser to http://localhost:8081 to perform a scan")
 		fmt.Println("If you want to add/remove pages to be scanned update the lookup.txt file")
+		fmt.Println("Press ^C to exit")
 		http.HandleFunc("/", handlers.ClientHandler)
 		http.ListenAndServe(":8081", nil)
 		//Load server that just shows status of pre-set URLs and\or files giving ability to add new

@@ -43,7 +43,7 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	theReq, _ := json.Marshal(request)
 
-	req, err := http.NewRequest("GET", "http://localhost:8080", bytes.NewBuffer(theReq))
+	req, err := http.NewRequest("GET", "http://104.197.145.153:8080", bytes.NewBuffer(theReq))
 
 	if err != nil {
 		panic("we broke making request")
