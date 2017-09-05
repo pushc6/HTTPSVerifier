@@ -112,13 +112,15 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Press 1 for server mode, or 2 for client mode: ")
+	fmt.Print("Press 1 for remote erver mode, or 2 for client mode (choose this if you want to see if being MITM'd): ")
 	text, _ := reader.ReadString('\n')
 	if "1" == strings.TrimSpace(text) {
 		http.HandleFunc("/", handler)
 		http.HandleFunc("/verify", verifyHandler)
 		http.ListenAndServe(":8080", nil)
 	} else {
+		fmt.Println("Point your browser to http://localhost:8081 to perform a scan")
+		fmt.Println("If you want to add/remove pages to be scanned update the lookup.txt file")
 		http.HandleFunc("/", handlers.ClientHandler)
 		http.ListenAndServe(":8081", nil)
 		//Load server that just shows status of pre-set URLs and\or files giving ability to add new

@@ -1,15 +1,24 @@
-<h1>Editing {{.Title}}</h1>
+<h1>TLS MITM Detector tool v.0001</h1>
 
 <p>
-
-        <h1>Websites to be scanned</h1>
-        <table>
+        <p>
+            <h2>About the tool</h2>
+            <p>
+            This tool scans the files within lookup.txt and compares the fingerprint of the certificate you receive locally to the fingerprint that is obtained remotely. If there
+             are any differences it could be a result of a MITM attack where your traffic is being actively decrypted. This tool is super de-duper alpha and google.com is sometimes
+              falsely flagged. There are no false negatives but false positives are possible.
+            </p>
+            <h2>How to use</h2>
+            Currently the only way to update the sites to get a fingerprint for is by editing the &quot;lookup.txt&quot; file. Add/remove entries from there and then restart the app.
+        </p>
+        <h1>Scanned websites</h1>
+        <table cellpadding="5">
             <tr>
-                <th>Website</th><th>Remote Fingerprint</th><th>Local Fingerprint</th><th>Being Intercepted?</th>
+                <th>Website</th><th>Remote Fingerprint</th><th>Local Fingerprint</th><th>Being Intercepted?</th><th>Error Message</th>
             </tr>
         {{range .Results}}
             <tr>
-            <td>{{.Domain}}</td><td>{{.RemoteFingerprint}}</td><td>{{.LocalFingerprint}}</td>
+            <td>{{.Domain}}</td><td>{{.RemoteFingerprint}}</td><td>{{.LocalFingerprint}}</td><td>{{.Intercepted}}</td><td>{{.ErrorMessage}}</td>
             </tr>
         {{end}}
         </table>

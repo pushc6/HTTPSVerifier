@@ -43,7 +43,7 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	theReq, _ := json.Marshal(request)
 
-	req, err := http.NewRequest("GET", "http://localhost:8080/", bytes.NewBuffer(theReq))
+	req, err := http.NewRequest("GET", "http://localhost:8080", bytes.NewBuffer(theReq))
 
 	if err != nil {
 		panic("we broke making request")
@@ -66,6 +66,7 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	l := make(map[string]string)
+	errors := make(map[string]string)
 	//Get client site fingerprints
 	for _, domain := range request.Domains {
 		domain = addHTTPS(domain)
@@ -75,10 +76,10 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		resp2, err := client.Do(req2)
 		if err != nil {
+			errors[removeHTTPS(domain)] = err.Error()
 			continue
 		}
 		finga := findFingerprint(resp2.TLS.PeerCertificates, domain)
-		fmt.Println("local fingerprint ", finga)
 		l[removeHTTPS(domain)] = finga
 	}
 
@@ -88,6 +89,8 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 			Domain:            key,
 			LocalFingerprint:  l[key],
 			RemoteFingerprint: val,
+			Intercepted:       l[key] != val,
+			ErrorMessage:      errors[key],
 		}
 		p.Results = append(p.Results, *merge)
 	}
@@ -102,7 +105,6 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 
 func addHTTPS(url string) string {
 	if !strings.Contains(strings.ToLower(url), "https://") && !strings.Contains(strings.ToLower(url), "https:\\") {
-		fmt.Println("no https, adding it now")
 		url = "https://" + url
 	}
 	return url
@@ -111,7 +113,6 @@ func addHTTPS(url string) string {
 func removeHTTPS(url string) string {
 	if strings.Contains(strings.ToLower(url), "https://") || strings.Contains(strings.ToLower(url), "https:\\") {
 		url = url[8:len(url)]
-		fmt.Println("new url ", url)
 	}
 	if strings.Contains(strings.ToLower(url), "www.") {
 		url = url[4:len(url)]
@@ -123,9 +124,7 @@ func findFingerprint(certs []*x509.Certificate, domain string) string {
 	domain = removeHTTPS(domain)
 	for _, val := range certs {
 		for _, dnsName := range val.DNSNames {
-			fmt.Println("matching ", domain)
 			if strings.Contains(strings.ToLower(strings.TrimSpace(dnsName)), strings.ToLower(domain)) {
-				fmt.Println("dns name: ", dnsName)
 				//return the associated hex encoded sha1 value
 				sha := sha1.Sum(val.Raw)
 				encoded := fmt.Sprintf("%x", sha)

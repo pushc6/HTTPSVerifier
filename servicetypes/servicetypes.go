@@ -27,4 +27,6 @@ type FingerprintMerge struct {
 	Domain            string
 	RemoteFingerprint string
 	LocalFingerprint  string
+	Intercepted       bool
+	ErrorMessage      string
 }
