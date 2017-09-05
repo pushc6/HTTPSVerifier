@@ -3,11 +3,15 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha1"
+	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/pushc6/httpsverifier/servicetypes"
 )
@@ -54,8 +58,80 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	response := &servicetypes.FingerprintResponse{}
 	decoder := json.NewDecoder(resp.Body)
 	decoder.Decode(response)
-	p.Results = *response
+
+	m := make(map[string]string)
+
+	for _, fResp := range response.Results {
+		m[removeHTTPS(fResp.Domain)] = fResp.Fingerprint
+	}
+
+	l := make(map[string]string)
+	//Get client site fingerprints
+	for _, domain := range request.Domains {
+		domain = addHTTPS(domain)
+		req2, err := http.NewRequest("GET", domain, nil)
+		if err != nil {
+			log.Fatal("unable to parse site: ", domain)
+		}
+		resp2, err := client.Do(req2)
+		if err != nil {
+			continue
+		}
+		finga := findFingerprint(resp2.TLS.PeerCertificates, domain)
+		fmt.Println("local fingerprint ", finga)
+		l[removeHTTPS(domain)] = finga
+	}
+
+	//Merge the lists and add the fingerprints
+	for key, val := range m {
+		merge := &servicetypes.FingerprintMerge{
+			Domain:            key,
+			LocalFingerprint:  l[key],
+			RemoteFingerprint: val,
+		}
+		p.Results = append(p.Results, *merge)
+	}
+
+	//Do this last, makes the page
 	t, _ := template.ParseFiles("index.html")
 	t.Execute(w, p)
 
+}
+
+//Duplicate code, must get rid of
+
+func addHTTPS(url string) string {
+	if !strings.Contains(strings.ToLower(url), "https://") && !strings.Contains(strings.ToLower(url), "https:\\") {
+		fmt.Println("no https, adding it now")
+		url = "https://" + url
+	}
+	return url
+}
+
+func removeHTTPS(url string) string {
+	if strings.Contains(strings.ToLower(url), "https://") || strings.Contains(strings.ToLower(url), "https:\\") {
+		url = url[8:len(url)]
+		fmt.Println("new url ", url)
+	}
+	if strings.Contains(strings.ToLower(url), "www.") {
+		url = url[4:len(url)]
+	}
+	return url
+}
+
+func findFingerprint(certs []*x509.Certificate, domain string) string {
+	domain = removeHTTPS(domain)
+	for _, val := range certs {
+		for _, dnsName := range val.DNSNames {
+			fmt.Println("matching ", domain)
+			if strings.Contains(strings.ToLower(strings.TrimSpace(dnsName)), strings.ToLower(domain)) {
+				fmt.Println("dns name: ", dnsName)
+				//return the associated hex encoded sha1 value
+				sha := sha1.Sum(val.Raw)
+				encoded := fmt.Sprintf("%x", sha)
+				return encoded
+			}
+		}
+	}
+	return ""
 }

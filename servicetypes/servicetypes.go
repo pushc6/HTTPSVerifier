@@ -20,5 +20,11 @@ type Page struct {
 	Title   string
 	Body    []byte
 	Domains []string
-	Results FingerprintResponse
+	Results []FingerprintMerge
+}
+
+type FingerprintMerge struct {
+	Domain            string
+	RemoteFingerprint string
+	LocalFingerprint  string
 }
