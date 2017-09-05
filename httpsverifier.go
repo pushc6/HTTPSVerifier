@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/pushc6/httpsverifier/handlers"
@@ -123,7 +126,9 @@ func main() {
 		fmt.Println("If you want to add/remove pages to be scanned update the lookup.txt file")
 		fmt.Println("Press ^C to exit")
 		http.HandleFunc("/", handlers.ClientHandler)
+		openbrowser("http://localhost:8081")
 		http.ListenAndServe(":8081", nil)
+
 		//Load server that just shows status of pre-set URLs and\or files giving ability to add new
 		//and allow them to do one-offs without adding
 	}
@@ -155,4 +160,23 @@ func removeHTTPS(url string) string {
 		url = url[4:len(url)]
 	}
 	return url
+}
+
+func openbrowser(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
