@@ -24,7 +24,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	//TODO strip off stuff like http and www and do a wildcard search for TLD
 	if r.Body == nil {
-		fmt.Println("NOTHING IN THE BODY")
+		log.Println("NOTHING IN THE BODY")
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -38,7 +38,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	for _, domain := range domainsRequested.Domains {
 		domain = addHTTPS(domain)
 		client := &http.Client{}
-		fmt.Println("Request", domain)
+		log.Println("Request for fingerprint of domain: ", domain)
 		req, err := http.NewRequest("GET", domain, nil)
 		if err != nil {
 			response := &servicetypes.DomainResult{
@@ -67,13 +67,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 		for _, val := range resp.TLS.PeerCertificates {
 			for _, dnsName := range val.DNSNames {
-				fmt.Println("matching ", domain)
 				if strings.Contains(strings.ToLower(strings.TrimSpace(dnsName)), strings.ToLower(domain)) {
-					fmt.Println("dns name: ", dnsName)
+
 					//return the associated hex encoded sha1 value
 					sha := sha1.Sum(val.Raw)
 					encoded := fmt.Sprintf("%x", sha)
-					fmt.Println(encoded)
+					log.Println("Found certificate for domain: ", domain, " dns name: ", dnsName, " fingerprint is: ", encoded)
 					response := &servicetypes.DomainResult{
 						Domain:      domain,
 						Fingerprint: encoded,
@@ -145,7 +144,6 @@ func loadPage(title string) (*servicetypes.Page, error) {
 
 func addHTTPS(url string) string {
 	if !strings.Contains(strings.ToLower(url), "https://") && !strings.Contains(strings.ToLower(url), "https:\\") {
-		fmt.Println("no https, adding it now")
 		url = "https://" + url
 	}
 	return url
@@ -154,7 +152,6 @@ func addHTTPS(url string) string {
 func removeHTTPS(url string) string {
 	if strings.Contains(strings.ToLower(url), "https://") || strings.Contains(strings.ToLower(url), "https:\\") {
 		url = url[8:len(url)]
-		fmt.Println("new url ", url)
 	}
 	if strings.Contains(strings.ToLower(url), "www.") {
 		url = url[4:len(url)]
