@@ -55,7 +55,7 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(resp.Body)
 	decoder.Decode(response)
 	p.Results = *response
-	t, _ := template.ParseFiles("handlers/index.html")
+	t, _ := template.ParseFiles("index.html")
 	t.Execute(w, p)
 
 }
