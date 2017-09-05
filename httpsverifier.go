@@ -113,24 +113,39 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	//CLI Startup
+	if len(os.Args) > 1 {
+		if os.Args[1] == "1" {
+			startupServer()
+		} else {
+			startupClient()
+		}
+	}
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Press 1 for remote erver mode, or 2 for client mode (choose this if you want to see if being MITM'd): ")
 	text, _ := reader.ReadString('\n')
 	if "1" == strings.TrimSpace(text) {
-		http.HandleFunc("/", handler)
-		http.HandleFunc("/verify", verifyHandler)
-		http.ListenAndServe(":8080", nil)
+		startupServer()
 	} else {
-		fmt.Println("Point your browser to http://localhost:8081 to perform a scan")
-		fmt.Println("If you want to add/remove pages to be scanned update the lookup.txt file")
-		fmt.Println("Press ^C to exit")
-		http.HandleFunc("/", handlers.ClientHandler)
-		openbrowser("http://localhost:8081")
-		http.ListenAndServe(":8081", nil)
-
+		startupClient()
 		//Load server that just shows status of pre-set URLs and\or files giving ability to add new
 		//and allow them to do one-offs without adding
 	}
+}
+
+func startupServer() {
+	http.HandleFunc("/", handler)
+	http.HandleFunc("/verify", verifyHandler)
+	http.ListenAndServe(":8080", nil)
+}
+
+func startupClient() {
+	fmt.Println("Point your browser to http://localhost:8081 to perform a scan")
+	fmt.Println("If you want to add/remove pages to be scanned update the lookup.txt file")
+	fmt.Println("Press ^C to exit")
+	http.HandleFunc("/", handlers.ClientHandler)
+	openbrowser("http://localhost:8081")
+	http.ListenAndServe(":8081", nil)
 }
 
 func loadPage(title string) (*servicetypes.Page, error) {
