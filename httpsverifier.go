@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pushc6/httpsverifier/page"
+	"github.com/pushc6/httpsverifier/handlers"
 	"github.com/pushc6/httpsverifier/servicetypes"
 )
 
@@ -104,7 +104,7 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/edit/"):]
 	p, err := loadPage(title)
 	if err != nil {
-		p = &page.Page{Title: title}
+		p = &servicetypes.Page{Title: title}
 	}
 	t, _ := template.ParseFiles("request.html")
 	t.Execute(w, p)
@@ -119,18 +119,20 @@ func main() {
 		http.HandleFunc("/verify", verifyHandler)
 		http.ListenAndServe(":8080", nil)
 	} else {
+		http.HandleFunc("/", handlers.ClientHandler)
+		http.ListenAndServe(":8081", nil)
 		//Load server that just shows status of pre-set URLs and\or files giving ability to add new
 		//and allow them to do one-offs without adding
 	}
 }
 
-func loadPage(title string) (*page.Page, error) {
+func loadPage(title string) (*servicetypes.Page, error) {
 	filename := title + ".txt"
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	return &page.Page{Title: title, Body: body}, nil
+	return &servicetypes.Page{Title: title, Body: body}, nil
 }
 
 func addHTTPS(url string) string {

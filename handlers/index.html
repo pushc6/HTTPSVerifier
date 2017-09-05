@@ -1,0 +1,10 @@
+<h1>Editing {{.Title}}</h1>
+
+<p>
+
+        <h1>Websites to be scanned</h1>
+        {{range .Results.Results}}
+            {{.Domain}}    {{.Fingerprint}}<br/>
+        {{end}}
+ 
+</p>
