@@ -122,6 +122,7 @@ func main() {
 }
 
 func startupServer() {
+	http.HandleFunc("/checkCert", handlers.OneOffHandler)
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
@@ -130,7 +131,6 @@ func startupClient() {
 	fmt.Println("Point your browser to http://localhost:8081 to perform a scan")
 	fmt.Println("If you want to add/remove pages to be scanned update the lookup.txt file")
 	fmt.Println("Press ^C to exit")
-	http.HandleFunc("/checkCert", handlers.OneOffHandler)
 	http.HandleFunc("/", handlers.ClientHandler)
 	openbrowser("http://localhost:8081")
 	http.ListenAndServe(":8081", nil)

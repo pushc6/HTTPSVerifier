@@ -3,10 +3,7 @@ package handlers
 import (
 	"bufio"
 	"bytes"
-	"crypto/sha1"
-	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -118,73 +115,4 @@ func removeHTTPS(url string) string {
 		url = url[4:len(url)]
 	}
 	return url
-}
-
-func OneOffHandler(w http.ResponseWriter, r *http.Request) {
-	domain := r.URL.Query().Get("domain")
-	if domain == "" {
-		resp := buildResponse(domain, "", false)
-		writeResponse(w, resp)
-	} else {
-		fingerprint := testRemoteDomain(domain)
-		resp := buildResponse(domain, fingerprint, fingerprint != "")
-		writeResponse(w, resp)
-	}
-}
-
-func testRemoteDomain(domain string) string {
-	domain = addHTTPS(domain)
-	client := &http.Client{}
-	reqObj := &servicetypes.FingerprintRequest{
-		Domains: []string{domain},
-	}
-	theReq, _ := json.Marshal(reqObj)
-	req, err := http.NewRequest("GET", "http://104.197.145.153:8080", bytes.NewBuffer(theReq))
-	if err != nil {
-		return ""
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return ""
-	}
-
-	fingerprintResponse := &servicetypes.FingerprintResponse{}
-	decoder := json.NewDecoder(resp.Body)
-	decoder.Decode(fingerprintResponse)
-
-	fingerprint := fingerprintResponse.Results[0].Fingerprint
-	return fingerprint
-}
-
-func writeResponse(w http.ResponseWriter, output interface{}) {
-	encoder := json.NewEncoder(w)
-	encoder.Encode(output)
-}
-
-func buildResponse(domain string, fingerprint string, found bool) *servicetypes.FingerprintResponse {
-
-	dr := &servicetypes.DomainResult{
-		Domain:      domain,
-		Fingerprint: fingerprint,
-		Found:       found,
-	}
-	fr := &servicetypes.FingerprintResponse{
-		Results: []servicetypes.DomainResult{*dr},
-	}
-	return fr
-
-}
-func findFingerprint(certs []*x509.Certificate, domain string) string {
-	domain = removeHTTPS(domain)
-	for _, val := range certs {
-		for _, dnsName := range val.DNSNames {
-			if strings.Contains(strings.ToLower(strings.TrimSpace(dnsName)), strings.ToLower(domain)) {
-				//return the associated hex encoded sha1 value
-				sha := sha1.Sum(val.Raw)
-				encoded := fmt.Sprintf("%x", sha)
-				return encoded
-			}
-		}
-	}
-	return ""
 }
