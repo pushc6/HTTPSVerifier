@@ -126,16 +126,20 @@ func OneOffHandler(w http.ResponseWriter, r *http.Request) {
 		resp := buildResponse(domain, "", false)
 		writeResponse(w, resp)
 	} else {
-		fingerprint := testDomain(domain)
+		fingerprint := testRemoteDomain(domain)
 		resp := buildResponse(domain, fingerprint, fingerprint != "")
 		writeResponse(w, resp)
 	}
 }
 
-func testDomain(domain string) string {
+func testRemoteDomain(domain string) string {
 	domain = addHTTPS(domain)
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", domain, nil)
+	reqObj := &servicetypes.FingerprintRequest{
+		Domains: []string{domain},
+	}
+	theReq, _ := json.Marshal(reqObj)
+	req, err := http.NewRequest("GET", "http://104.197.145.153:8080", bytes.NewBuffer(theReq))
 	if err != nil {
 		return ""
 	}
@@ -143,7 +147,12 @@ func testDomain(domain string) string {
 	if err != nil {
 		return ""
 	}
-	fingerprint := findFingerprint(resp.TLS.PeerCertificates, domain)
+
+	fingerprintResponse := &servicetypes.FingerprintResponse{}
+	decoder := json.NewDecoder(resp.Body)
+	decoder.Decode(fingerprintResponse)
+
+	fingerprint := fingerprintResponse.Results[0].Fingerprint
 	return fingerprint
 }
 
