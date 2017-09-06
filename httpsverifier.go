@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	"crypto/sha1"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,10 +19,7 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	//fmt.Fprintf(w, "Checking your certificate fingerprints %s \n\n", r.URL.Path[1:])
 	found := false
-
-	//TODO strip off stuff like http and www and do a wildcard search for TLD
 	if r.Body == nil {
 		log.Println("NOTHING IN THE BODY")
 	}
@@ -102,16 +99,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	jsonEncoder.Encode(results)
 }
 
-func verifyHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[len("/edit/"):]
-	p, err := loadPage(title)
-	if err != nil {
-		p = &servicetypes.Page{Title: title}
-	}
-	t, _ := template.ParseFiles("request.html")
-	t.Execute(w, p)
-}
-
 func main() {
 	//CLI Startup
 	if len(os.Args) > 1 {
@@ -120,22 +107,22 @@ func main() {
 		} else {
 			startupClient()
 		}
-	}
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Press 1 for remote erver mode, or 2 for client mode (choose this if you want to see if being MITM'd): ")
-	text, _ := reader.ReadString('\n')
-	if "1" == strings.TrimSpace(text) {
-		startupServer()
 	} else {
-		startupClient()
-		//Load server that just shows status of pre-set URLs and\or files giving ability to add new
-		//and allow them to do one-offs without adding
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Press 1 for remote erver mode, or 2 for client mode (choose this if you want to see if being MITM'd): ")
+		text, _ := reader.ReadString('\n')
+		if "1" == strings.TrimSpace(text) {
+			startupServer()
+		} else {
+			startupClient()
+			//Load server that just shows status of pre-set URLs and\or files giving ability to add new
+			//and allow them to do one-offs without adding
+		}
 	}
 }
 
 func startupServer() {
 	http.HandleFunc("/", handler)
-	http.HandleFunc("/verify", verifyHandler)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -143,6 +130,7 @@ func startupClient() {
 	fmt.Println("Point your browser to http://localhost:8081 to perform a scan")
 	fmt.Println("If you want to add/remove pages to be scanned update the lookup.txt file")
 	fmt.Println("Press ^C to exit")
+	http.HandleFunc("/checkCert", handlers.OneOffHandler)
 	http.HandleFunc("/", handlers.ClientHandler)
 	openbrowser("http://localhost:8081")
 	http.ListenAndServe(":8081", nil)
@@ -191,4 +179,19 @@ func openbrowser(url string) {
 		log.Fatal(err)
 	}
 
+}
+
+func findFingerprint(certs []*x509.Certificate, domain string) string {
+	domain = removeHTTPS(domain)
+	for _, val := range certs {
+		for _, dnsName := range val.DNSNames {
+			if strings.Contains(strings.ToLower(strings.TrimSpace(dnsName)), strings.ToLower(domain)) {
+				//return the associated hex encoded sha1 value
+				sha := sha1.Sum(val.Raw)
+				encoded := fmt.Sprintf("%x", sha)
+				return encoded
+			}
+		}
+	}
+	return ""
 }

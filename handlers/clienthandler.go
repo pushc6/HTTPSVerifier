@@ -120,6 +120,51 @@ func removeHTTPS(url string) string {
 	return url
 }
 
+func OneOffHandler(w http.ResponseWriter, r *http.Request) {
+	domain := r.URL.Query().Get("domain")
+	if domain == "" {
+		resp := buildResponse(domain, "", false)
+		writeResponse(w, resp)
+	} else {
+		fingerprint := testDomain(domain)
+		resp := buildResponse(domain, fingerprint, fingerprint != "")
+		writeResponse(w, resp)
+	}
+}
+
+func testDomain(domain string) string {
+	domain = addHTTPS(domain)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", domain, nil)
+	if err != nil {
+		return ""
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	fingerprint := findFingerprint(resp.TLS.PeerCertificates, domain)
+	return fingerprint
+}
+
+func writeResponse(w http.ResponseWriter, output interface{}) {
+	encoder := json.NewEncoder(w)
+	encoder.Encode(output)
+}
+
+func buildResponse(domain string, fingerprint string, found bool) *servicetypes.FingerprintResponse {
+
+	dr := &servicetypes.DomainResult{
+		Domain:      domain,
+		Fingerprint: fingerprint,
+		Found:       found,
+	}
+	fr := &servicetypes.FingerprintResponse{
+		Results: []servicetypes.DomainResult{*dr},
+	}
+	return fr
+
+}
 func findFingerprint(certs []*x509.Certificate, domain string) string {
 	domain = removeHTTPS(domain)
 	for _, val := range certs {
