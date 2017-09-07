@@ -19,7 +19,6 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	found := false
 	if r.Body == nil {
 		log.Println("NOTHING IN THE BODY")
 	}
@@ -62,38 +61,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 		//TODO trim off the http/https/www and make it NAME.TLD
 
-		for _, val := range resp.TLS.PeerCertificates {
-			for _, dnsName := range val.DNSNames {
-				if strings.Contains(strings.ToLower(strings.TrimSpace(dnsName)), strings.ToLower(domain)) {
-
-					//return the associated hex encoded sha1 value
-					sha := sha1.Sum(val.Raw)
-					encoded := fmt.Sprintf("%x", sha)
-					log.Println("Found certificate for domain: ", domain, " dns name: ", dnsName, " fingerprint is: ", encoded)
-					response := &servicetypes.DomainResult{
-						Domain:      domain,
-						Fingerprint: encoded,
-						Found:       true,
-					}
-
-					results.Results = append(results.Results, *response)
-					found = true
-					break
-				}
-			}
-			if found {
-				break
-			}
+		fingerprint := findFingerprint(resp.TLS.PeerCertificates, domain)
+		response := &servicetypes.DomainResult{
+			Domain:      domain,
+			Fingerprint: fingerprint,
+			Found:       fingerprint != "",
 		}
-		if found == false {
-			response := &servicetypes.DomainResult{
-				Domain:      domain,
-				Fingerprint: "",
-				Found:       false,
-			}
-			results.Results = append(results.Results, *response)
-		}
-		found = false
+		results.Results = append(results.Results, *response)
+
 	}
 	jsonEncoder := json.NewEncoder(w)
 	jsonEncoder.Encode(results)

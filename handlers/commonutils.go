@@ -16,7 +16,7 @@ func writeResponse(w http.ResponseWriter, output interface{}) {
 	encoder.Encode(output)
 }
 
-func buildResponse(domain string, fingerprint string, found bool) *servicetypes.FingerprintResponse {
+func BuildResponse(domain string, fingerprint string, found bool) *servicetypes.FingerprintResponse {
 
 	dr := &servicetypes.DomainResult{
 		Domain:      domain,

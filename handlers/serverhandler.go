@@ -7,11 +7,11 @@ import (
 func OneOffHandler(w http.ResponseWriter, r *http.Request) {
 	domain := r.URL.Query().Get("domain")
 	if domain == "" {
-		resp := buildResponse(domain, "", false)
+		resp := BuildResponse(domain, "", false)
 		writeResponse(w, resp)
 	} else {
 		fingerprint := testDomain(domain)
-		resp := buildResponse(domain, fingerprint, fingerprint != "")
+		resp := BuildResponse(domain, fingerprint, fingerprint != "")
 		writeResponse(w, resp)
 	}
 }

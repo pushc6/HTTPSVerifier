@@ -5,7 +5,7 @@ type FingerprintResponse struct {
 	Results []DomainResult
 }
 
-//Used for fingerprint requests
+//FingerprintRequest - Used for fingerprint requests duh
 type FingerprintRequest struct {
 	Domains []string
 }
