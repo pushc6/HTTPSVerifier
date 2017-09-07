@@ -27,7 +27,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	domainsRequested := &servicetypes.FingerprintRequest{}
 	err := decoder.Decode(domainsRequested)
 	if err != nil {
-		fmt.Fprintf(w, "There was a problem processing your request")
+		fmt.Fprintf(w, "There was a problem processing your request\n")
+		fmt.Fprintf(w, "Please make requests in the following format\n\n")
+		test := &servicetypes.FingerprintRequest{Domains: []string{"test.com", "buttfoundry.com"}}
+		enc := json.NewEncoder(w)
+		enc.Encode(test)
 	}
 
 	results := &servicetypes.FingerprintResponse{}
@@ -70,8 +74,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		results.Results = append(results.Results, *response)
 
 	}
-	jsonEncoder := json.NewEncoder(w)
-	jsonEncoder.Encode(results)
+	if len(domainsRequested.Domains) != 0 {
+		jsonEncoder := json.NewEncoder(w)
+		jsonEncoder.Encode(results)
+	}
 }
 
 func main() {
