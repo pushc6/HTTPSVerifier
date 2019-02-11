@@ -105,7 +105,7 @@ func main() {
 func startupServer() {
 	http.HandleFunc("/checkCert", handlers.OneOffHandler)
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":80", nil)
 }
 
 func startupClient() {
